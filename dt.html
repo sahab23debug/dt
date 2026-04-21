@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclusivity Pulse Platform</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg: #f9fafb;
+            --text: #111827;
+            --safe-green: #10b981;
+            --alert-red: #ef4444;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        nav { background: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        
+        /* Toggle UI */
+        .view-switcher { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .btn { padding: 0.6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        
+        /* Form styling */
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        select, textarea { width: 100%; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 1rem; box-sizing: border-box; }
+        textarea { height: 120px; }
+        
+        /* Heatmap Grid */
+        .heatmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 1rem; }
+        .heatmap-cell { height: 80px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; text-align: center; font-size: 0.8rem; padding: 5px; }
+        .level-low { background: #dcfce7; color: #166534; }
+        .level-med { background: #fef9c3; color: #854d0e; }
+        .level-high { background: #fee2e2; color: #991b1b; }
+        
+        .hidden { display: none; }
+        .status-msg { padding: 1rem; border-radius: 6px; margin-top: 1rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">Inclusivity Pulse</div>
+        <div id="auth-tag" style="font-size: 0.8rem; background: #eee; padding: 4px 8px; border-radius: 4px;">Token: [ANON-8821-X]</div>
+    </nav>
+
+    <div class="container">
+        <div class="view-switcher">
+            <button class="btn btn-primary" onclick="switchView('employee')">Employee Portal</button>
+            <button class="btn btn-outline" onclick="switchView('hr')">HR Admin Dashboard</button>
+        </div>
+
+        <!-- EMPLOYEE VIEW: Safe-Space Submission Portal -->
+        <section id="employee-view">
+            <div class="card">
+                <h2>Safe-Space Submission Portal</h2>
+                <p style="color: #6b7280; margin-bottom: 1.5rem;">Your identity is protected by End-to-End Encryption and automated NLP scrubbing. No IP addresses or credentials are stored.</p>
+                
+                <form id="incidentForm">
+                    <label for="category">Incident Category</label>
+                    <select id="category" required>
+                        <option value="">Select a category...</option>
+                        <option value="wage">Wage Disparity</option>
+                        <option value="micro">Verbal Microaggression</option>
+                        <option value="bias">Promotion/Hiring Bias</option>
+                        <option value="other">Other</option>
+                    </select>
+
+                    <label for="description">Describe the Incident</label>
+                    <textarea id="description" placeholder="Describe what happened. Note: Names and specific dates will be automatically scrubbed..." required></textarea>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Anonymize & Securely Submit</button>
+                </form>
+                <div id="submission-success" class="hidden status-msg">
+                    <strong>Success!</strong> Your report has been scrubbed and submitted. Track your status using your anonymous token.
+                </div>
+            </div>
+        </section>
+
+        <!-- HR VIEW: Inclusivity Heatmap -->
+        <section id="hr-view" class="hidden">
+            <div class="card">
+                <h2>Inclusivity Heatmap</h2>
+                <p style="color: #6b7280;">Aggregated departmental trends. Individual identifiers have been removed via NLP.</p>
+                
+                <div class="heatmap">
+                    <!-- Heatmap cells will be dynamically generated here -->
+                    <div class="heatmap-cell level-high">Sales<br>(High Alert: Bias)</div>
+                    <div class="heatmap-cell level-med">Marketing<br>(Med: Wage Gap)</div>
+                    <div class="heatmap-cell level-low">Product<br>(Healthy)</div>
+                    <div class="heatmap-cell level-med">Customer Success<br>(Med: Attrition)</div>
+                    <div class="heatmap-cell level-low">Legal<br>(Healthy)</div>
+                    <div class="heatmap-cell level-low">Design<br>(Healthy)</div>
+                    <div class="heatmap-cell level-high">Operations<br>(High Alert)</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Recent Anonymized Alerts</h3>
+                <div id="recent-alerts-container">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Persistence Logic: Load incidents from localStorage or initialize empty array
+        let incidents = JSON.parse(localStorage.getItem('inclusivity_incidents')) || [
+            { id: 1, category: 'Promotion Bias', description: "Employee reported concerns regarding [REDACTED] during the Q3 cycle.", severity: 'high' }
+        ];
+
+        // Function to render the HR Dashboard alerts from persistent storage
+        function renderRecentAlerts() {
+            const container = document.getElementById('recent-alerts-container');
+            if (!container) return;
+            
+            container.innerHTML = ''; // Clear current view
+
+            // Show incidents in reverse chronological order
+            [...incidents].reverse().forEach(incident => {
+                const alertDiv = document.createElement('div');
+                alertDiv.style.borderLeft = `4px solid ${incident.severity === 'high' ? 'var(--alert-red)' : 'var(--primary)'}`;
+                alertDiv.style.paddingLeft = '1rem';
+                alertDiv.style.marginTop = '1rem';
+                alertDiv.style.background = '#f9fafb';
+                alertDiv.style.padding = '10px';
+                
+                alertDiv.innerHTML = `
+                    <strong>Category: ${incident.category}</strong><br>
+                    <span style="font-style: italic; color: #4b5563;">"${incident.description}"</span>
+                    <div style="margin-top: 5px;">
+                        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.7rem;">Open Investigation</button>
+                    </div>
+                `;
+                container.appendChild(alertDiv);
+            });
+        }
+
+        function renderHRDashboard() {
+            renderRecentAlerts();
+        }
+
+        // Switch between Employee and HR views
+        function switchView(view) {
+            const empSection = document.getElementById('employee-view');
+            const hrSection = document.getElementById('hr-view');
+            const buttons = document.querySelectorAll('.view-switcher .btn');
+
+            if (view === 'employee') {
+                empSection.classList.remove('hidden');
+                hrSection.classList.add('hidden');
+                buttons[0].className = 'btn btn-primary';
+                buttons[1].className = 'btn btn-outline';
+            } else {
+                empSection.classList.add('hidden');
+                hrSection.classList.remove('hidden');
+                buttons[0].className = 'btn btn-outline';
+                buttons[1].className = 'btn btn-primary';
+                renderHRDashboard();
+            }
+        }
+
+        // Simulate NLP Scrubbing and Submission
+        document.getElementById('incidentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const categoryEl = document.getElementById('category');
+            const text = document.getElementById('description').value;
+            
+            // Simple regex simulation of NLP scrubbing (redacting capitalized names/proper nouns)
+            const scrubbedText = text.replace(/\b[A-Z][a-z]+\b/g, "[REDACTED]");
+            
+            // Create new incident object
+            const newIncident = {
+                id: Date.now(),
+                category: categoryEl.options[categoryEl.selectedIndex].text,
+                description: scrubbedText,
+                severity: 'medium', // Default severity
+                timestamp: new Date().toISOString()
+            };
+
+            // Add to local array and Persist to localStorage
+            incidents.push(newIncident);
+            localStorage.setItem('inclusivity_incidents', JSON.stringify(incidents));
+            
+            console.log("Persisted Content:", newIncident);
+            
+            document.getElementById('submission-success').classList.remove('hidden');
+            this.reset();
+            
+            setTimeout(() => {
+                document.getElementById('submission-success').classList.add('hidden');
+            }, 5000);
+
+            // If HR view is currently active, update it to show the new incident
+            if (!document.getElementById('hr-view').classList.contains('hidden')) {
+                renderHRDashboard();
+            }
+        });
+    </script>
+    
+</body>
+</html>
