@@ -69,10 +69,25 @@
     </nav>
 
     <div class="container">
-        <div class="view-switcher">
+        <div class="view-switcher hidden">
             <button class="btn btn-primary" onclick="switchView('employee')">Employee Portal</button>
             <button class="btn btn-outline" onclick="switchView('hr')">HR Admin Dashboard</button>
         </div>
+
+        <!-- INTRO VIEW: Landing Page -->
+        <section id="intro-view">
+            <div class="card" style="text-align: center; padding: 4rem 2rem;">
+                <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--primary);">Welcome to Inclusivity Pulse</h1>
+                <p style="color: var(--gray-600); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2.5rem auto; line-height: 1.6;">
+                    A secure, anonymous platform designed to foster a more equitable workplace. Report incidents safely or manage departmental health through our encrypted dashboard.
+                </p>
+                <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1rem;" onclick="switchView('employee')">Employee Portal</button>
+                    <button class="btn btn-outline" style="padding: 1rem 2.5rem; font-size: 1rem;" onclick="switchView('hr')">HR / Admin Portal</button>
+                </div>
+                <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--gray-600);">All data is anonymized using NLP before being stored.</p>
+            </div>
+        </section>
 
         <!-- LOGIN VIEW -->
         <section id="login-view" class="hidden">
@@ -93,7 +108,7 @@
         </section>
 
         <!-- EMPLOYEE VIEW: Safe-Space Submission Portal -->
-        <section id="employee-view">
+        <section id="employee-view" class="hidden">
             <div class="card">
                 <h2>Safe-Space Submission Portal</h2>
                 <p style="color: #6b7280; margin-bottom: 1.5rem;">Your identity is protected by End-to-End Encryption and automated NLP scrubbing. No IP addresses or credentials are stored.</p>
@@ -386,15 +401,25 @@
 
         // Switch between Employee and HR views
         function switchView(view) {
+            const introSection = document.getElementById('intro-view');
             const empSection = document.getElementById('employee-view');
             const hrSection = document.getElementById('hr-view');
             const loginSection = document.getElementById('login-view');
+            const switcher = document.querySelector('.view-switcher');
             const buttons = document.querySelectorAll('.view-switcher .btn');
 
-            if (view === 'employee') {
+            // Hide all by default
+            introSection.classList.add('hidden');
+            empSection.classList.add('hidden');
+            hrSection.classList.add('hidden');
+            loginSection.classList.add('hidden');
+            switcher.classList.remove('hidden');
+
+            if (view === 'intro') {
+                introSection.classList.remove('hidden');
+                switcher.classList.add('hidden');
+            } else if (view === 'employee') {
                 empSection.classList.remove('hidden');
-                hrSection.classList.add('hidden');
-                loginSection.classList.add('hidden');
                 buttons[0].className = 'btn btn-primary';
                 buttons[1].className = 'btn btn-outline';
             } else if (view === 'hr') {
@@ -496,3 +521,5 @@
     
 </body>
 </html>
+
+
