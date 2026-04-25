@@ -11,10 +11,12 @@
             --text: #111827;
             --safe-green: #10b981;
             --alert-red: #ef4444;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         nav { background: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .container { max-width: 1150px; margin: 2rem auto; padding: 0 1rem; }
         .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 2rem; }
         
         /* Toggle UI */
@@ -22,11 +24,12 @@
         .btn { padding: 0.6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-danger { background: var(--alert-red); color: white; }
         
         /* Form styling */
         label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        select, textarea { width: 100%; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 1rem; box-sizing: border-box; }
-        textarea { height: 120px; }
+        select, textarea, input { width: 100%; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 1rem; box-sizing: border-box; font-family: inherit; }
+        textarea { height: 100px; }
         
         /* Heatmap Grid */
         .heatmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 1rem; }
@@ -37,12 +40,32 @@
         
         .hidden { display: none; }
         .status-msg { padding: 1rem; border-radius: 6px; margin-top: 1rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+
+        /* Login specific */
+        .login-container { max-width: 400px; margin: 4rem auto; }
+        .error-msg { color: var(--alert-red); font-size: 0.85rem; margin-bottom: 1rem; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mb-4 { margin-bottom: 1rem; }
+
+        /* Admin Sidebar Layout */
+        .admin-layout { display: flex; gap: 2rem; align-items: flex-start; }
+        .admin-sidebar { width: 220px; flex-shrink: 0; position: sticky; top: 2rem; }
+        .admin-nav { display: flex; flex-direction: column; gap: 0.5rem; }
+        .admin-nav-item { padding: 0.8rem 1rem; border-radius: 8px; border: none; background: transparent; text-align: left; cursor: pointer; color: var(--gray-600); font-weight: 500; transition: 0.2s; }
+        .admin-nav-item:hover { background: var(--gray-200); }
+        .admin-nav-item.active { background: var(--primary); color: white; }
+        .admin-main { flex: 1; min-width: 0; }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--gray-200); font-size: 0.85rem; }
+        th { background: #f3f4f6; font-weight: 600; color: var(--gray-600); }
     </style>
 </head>
 <body>
     <nav>
         <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">Inclusivity Pulse</div>
-        <div id="auth-tag" style="font-size: 0.8rem; background: #eee; padding: 4px 8px; border-radius: 4px;">Token: [ANON-8821-X]</div>
+        <div id="auth-tag" style="font-size: 0.8rem; background: #eee; padding: 4px 8px; border-radius: 4px;">Token: <span id="token-display">...</span></div>
     </nav>
 
     <div class="container">
@@ -50,6 +73,24 @@
             <button class="btn btn-primary" onclick="switchView('employee')">Employee Portal</button>
             <button class="btn btn-outline" onclick="switchView('hr')">HR Admin Dashboard</button>
         </div>
+
+        <!-- LOGIN VIEW -->
+        <section id="login-view" class="hidden">
+            <div class="card login-container">
+                <h2 style="text-align: center;">Admin Login</h2>
+                <p style="text-align: center; color: var(--gray-600); margin-bottom: 1.5rem;">Access restricted to HR Personnel</p>
+                <form id="loginForm">
+                    <div id="login-error" class="error-msg hidden">Invalid username or password.</div>
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter admin username" required>
+                    
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                </form>
+            </div>
+        </section>
 
         <!-- EMPLOYEE VIEW: Safe-Space Submission Portal -->
         <section id="employee-view">
@@ -67,6 +108,15 @@
                         <option value="other">Other</option>
                     </select>
 
+                    <label for="department">Department</label>
+                    <select id="department" required>
+                        <option value="">Select a department...</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Product">Product</option>
+                        <option value="Engineering">Engineering</option>
+                    </select>
+
                     <label for="description">Describe the Incident</label>
                     <textarea id="description" placeholder="Describe what happened. Note: Names and specific dates will be automatically scrubbed..." required></textarea>
                     
@@ -80,25 +130,68 @@
 
         <!-- HR VIEW: Inclusivity Heatmap -->
         <section id="hr-view" class="hidden">
-            <div class="card">
-                <h2>Inclusivity Heatmap</h2>
-                <p style="color: #6b7280;">Aggregated departmental trends. Individual identifiers have been removed via NLP.</p>
-                
-                <div class="heatmap">
-                    <!-- Heatmap cells will be dynamically generated here -->
-                    <div class="heatmap-cell level-high">Sales<br>(High Alert: Bias)</div>
-                    <div class="heatmap-cell level-med">Marketing<br>(Med: Wage Gap)</div>
-                    <div class="heatmap-cell level-low">Product<br>(Healthy)</div>
-                    <div class="heatmap-cell level-med">Customer Success<br>(Med: Attrition)</div>
-                    <div class="heatmap-cell level-low">Legal<br>(Healthy)</div>
-                    <div class="heatmap-cell level-low">Design<br>(Healthy)</div>
-                    <div class="heatmap-cell level-high">Operations<br>(High Alert)</div>
-                </div>
-            </div>
+            <div class="admin-layout">
+                <aside class="admin-sidebar">
+                    <div class="card" style="padding: 1rem;">
+                        <div style="font-weight: bold; margin-bottom: 1rem; padding-left: 1rem; color: var(--primary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Admin Portal</div>
+                        <nav class="admin-nav">
+                            <button class="admin-nav-item active" onclick="showAdminSection('heatmap', this)">Heatmap</button>
+                            <button class="admin-nav-item" onclick="showAdminSection('alerts', this)">Recent Alerts</button>
+                            <button class="admin-nav-item" onclick="showAdminSection('logs', this)">Detailed Logs</button>
+                            <hr style="margin: 0.5rem 0; border: none; border-top: 1px solid var(--gray-200);">
+                            <button class="admin-nav-item" style="color: var(--alert-red);" onclick="handleLogout()">Logout</button>
+                        </nav>
+                    </div>
+                </aside>
 
-            <div class="card">
-                <h3>Recent Anonymized Alerts</h3>
-                <div id="recent-alerts-container">
+                <div class="admin-main">
+                    <div id="section-heatmap" class="card">
+                        <div class="flex-between mb-4">
+                            <h2>Inclusivity Heatmap</h2>
+                        </div>
+                        <p style="color: #6b7280;">Aggregated departmental trends. Individual identifiers have been removed via NLP.</p>
+                        <div class="heatmap" id="heatmap-grid"></div>
+                    </div>
+
+                    <div id="section-alerts" class="card hidden">
+                        <h3>Recent Anonymized Alerts</h3>
+                        <div id="recent-alerts-container"></div>
+                    </div>
+
+                    <div id="section-logs" class="card hidden">
+                        <h3>Detailed Report Log</h3>
+                        
+                        <h4 style="margin-top: 1.5rem; color: #854d0e;">Pending Cases</h4>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Category</th>
+                                        <th>Department</th>
+                                        <th>Submitted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-log-pending-body"></tbody>
+                            </table>
+                        </div>
+
+                        <h4 style="margin-top: 2rem; color: var(--safe-green);">Solved Cases</h4>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Category</th>
+                                        <th>Department</th>
+                                        <th>Submitted</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-log-solved-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -107,8 +200,62 @@
     <script>
         // Persistence Logic: Load incidents from localStorage or initialize empty array
         let incidents = JSON.parse(localStorage.getItem('inclusivity_incidents')) || [
-            { id: 1, category: 'Promotion Bias', description: "Employee reported concerns regarding [REDACTED] during the Q3 cycle.", severity: 'high' }
+            { id: 1, category: 'Promotion/Hiring Bias', description: "Employee reported concerns regarding [REDACTED] during the Q3 cycle.", severity: 'high', dept: 'Sales', status: 'pending', token: 'ANON-8821-X' }
         ];
+
+        // Generate a random anonymous token for the current session
+        function generateToken() {
+            const randomDigits = Math.floor(1000 + Math.random() * 9000);
+            const randomChar = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            return `ANON-${randomDigits}-${randomChar}`;
+        }
+
+        let sessionToken = generateToken();
+        document.getElementById('token-display').textContent = `[${sessionToken}]`;
+
+        // Linked List implementation for Admin Login Details
+        class AdminNode {
+            constructor(username, password) {
+                this.username = username;
+                this.password = password;
+                this.next = null;
+            }
+        }
+
+        class AdminLinkedList {
+            constructor() {
+                this.head = null;
+            }
+
+            // Add a new admin to the list
+            addAdmin(username, password) {
+                const newNode = new AdminNode(username, password);
+                if (!this.head) {
+                    this.head = newNode;
+                } else {
+                    let current = this.head;
+                    while (current.next) current = current.next;
+                    current.next = newNode;
+                }
+            }
+
+            // Validate credentials by traversing the list
+            validate(username, password) {
+                let current = this.head;
+                while (current) {
+                    if (current.username === username && current.password === password) return true;
+                    current = current.next;
+                }
+                return false;
+            }
+        }
+
+        const adminAuthList = new AdminLinkedList();
+        adminAuthList.addAdmin('admin', 'password123');
+        adminAuthList.addAdmin('hr_lead', 'hrSecure2026');
+
+        // Auth State
+        let isAuthenticated = sessionStorage.getItem('isAdminAuthenticated') === 'true';
 
         // Function to render the HR Dashboard alerts from persistent storage
         function renderRecentAlerts() {
@@ -119,52 +266,157 @@
 
             // Show incidents in reverse chronological order
             [...incidents].reverse().forEach(incident => {
+                const isSolved = incident.status === 'solved';
                 const alertDiv = document.createElement('div');
-                alertDiv.style.borderLeft = `4px solid ${incident.severity === 'high' ? 'var(--alert-red)' : 'var(--primary)'}`;
+                alertDiv.style.borderLeft = `4px solid ${isSolved ? 'var(--safe-green)' : (incident.severity === 'high' ? 'var(--alert-red)' : 'var(--primary)')}`;
                 alertDiv.style.paddingLeft = '1rem';
                 alertDiv.style.marginTop = '1rem';
                 alertDiv.style.background = '#f9fafb';
                 alertDiv.style.padding = '10px';
+                alertDiv.style.borderRadius = '0 6px 6px 0';
                 
                 alertDiv.innerHTML = `
-                    <strong>Category: ${incident.category}</strong><br>
+                    <div class="flex-between">
+                        <strong>Category: ${incident.category} ${incident.dept ? `(${incident.dept})` : ''} 
+                        <small style="color:var(--gray-600); font-weight:normal; margin-left:10px;">ID: ${incident.token || 'N/A'}</small></strong>
+                        <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: ${isSolved ? '#dcfce7' : '#fef9c3'}; color: ${isSolved ? '#166534' : '#854d0e'};">
+                            ${isSolved ? 'Solved' : 'Pending'}
+                        </span>
+                    </div>
                     <span style="font-style: italic; color: #4b5563;">"${incident.description}"</span>
                     <div style="margin-top: 5px;">
                         <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.7rem;">Open Investigation</button>
+                        ${!isSolved ? `<button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.7rem; margin-left: 5px;" onclick="solveIncident(${incident.id})">Mark as Solved</button>` : ''}
                     </div>
                 `;
                 container.appendChild(alertDiv);
             });
         }
 
+        function renderHeatmap() {
+            const grid = document.getElementById('heatmap-grid');
+            if (!grid) return;
+            
+            const depts = ["Sales", "Marketing", "Product", "Engineering", "Legal", "Design"];
+            grid.innerHTML = '';
+
+            depts.forEach(dept => {
+                const deptIncidents = incidents.filter(i => i.dept === dept && i.status !== 'solved');
+                let level = 'level-low';
+                let status = 'Healthy';
+
+                if (deptIncidents.length > 2) { level = 'level-high'; status = 'High Alert'; }
+                else if (deptIncidents.length > 0) { level = 'level-med'; status = 'Caution'; }
+
+                const cell = document.createElement('div');
+                cell.className = `heatmap-cell ${level}`;
+                cell.innerHTML = `${dept}<br>(${status})`;
+                grid.appendChild(cell);
+            });
+        }
+
+        function renderReportLog() {
+            const pendingBody = document.getElementById('report-log-pending-body');
+            const solvedBody = document.getElementById('report-log-solved-body');
+            if (!pendingBody || !solvedBody) return;
+            
+            pendingBody.innerHTML = '';
+            solvedBody.innerHTML = '';
+
+            [...incidents].reverse().forEach(incident => {
+                const isSolved = incident.status === 'solved';
+                const date = new Date(incident.timestamp).toLocaleDateString();
+                const tr = document.createElement('tr');
+                
+                if (isSolved) {
+                    tr.innerHTML = `
+                        <td style="font-family: monospace; font-weight: 600;">${incident.token || 'N/A'}</td>
+                        <td>${incident.category}</td>
+                        <td>${incident.dept || 'Unknown'}</td>
+                        <td style="color: var(--gray-600);">${date}</td>
+                    `;
+                    solvedBody.appendChild(tr);
+                } else {
+                    tr.innerHTML = `
+                        <td style="font-family: monospace; font-weight: 600;">${incident.token || 'N/A'}</td>
+                        <td>${incident.category}</td>
+                        <td>${incident.dept || 'Unknown'}</td>
+                        <td style="color: var(--gray-600);">${date}</td>
+                        <td>
+                            <button class="btn btn-primary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="solveIncident(${incident.id})">Solve</button>
+                        </td>
+                    `;
+                    pendingBody.appendChild(tr);
+                }
+            });
+        }
+
         function renderHRDashboard() {
             renderRecentAlerts();
+            renderHeatmap();
+            renderReportLog();
+        }
+
+        function showAdminSection(sectionId, element) {
+            // Update sidebar active state
+            document.querySelectorAll('.admin-nav-item').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+
+            // Toggle section visibility
+            document.getElementById('section-heatmap').classList.add('hidden');
+            document.getElementById('section-alerts').classList.add('hidden');
+            document.getElementById('section-logs').classList.add('hidden');
+
+            const target = document.getElementById('section-' + sectionId);
+            if (target) target.classList.remove('hidden');
+        }
+
+        function solveIncident(id) {
+            const index = incidents.findIndex(i => i.id === id);
+            if (index !== -1) {
+                incidents[index].status = 'solved';
+                localStorage.setItem('inclusivity_incidents', JSON.stringify(incidents));
+                renderHRDashboard();
+            }
         }
 
         // Switch between Employee and HR views
         function switchView(view) {
             const empSection = document.getElementById('employee-view');
             const hrSection = document.getElementById('hr-view');
+            const loginSection = document.getElementById('login-view');
             const buttons = document.querySelectorAll('.view-switcher .btn');
 
             if (view === 'employee') {
                 empSection.classList.remove('hidden');
                 hrSection.classList.add('hidden');
+                loginSection.classList.add('hidden');
                 buttons[0].className = 'btn btn-primary';
                 buttons[1].className = 'btn btn-outline';
-            } else {
+            } else if (view === 'hr') {
                 empSection.classList.add('hidden');
-                hrSection.classList.remove('hidden');
                 buttons[0].className = 'btn btn-outline';
                 buttons[1].className = 'btn btn-primary';
-                renderHRDashboard();
+                
+                if (isAuthenticated) {
+                    hrSection.classList.remove('hidden');
+                    loginSection.classList.add('hidden');
+                    renderHRDashboard();
+                } else {
+                    hrSection.classList.add('hidden');
+                    loginSection.classList.remove('hidden');
+                }
             }
         }
 
-        // Simulate NLP Scrubbing and Submission
-        document.getElementById('incidentForm').addEventListener('submit', function(e) {
+        /**
+         * Handles the submission of a new incident
+         * @param {Event} e 
+         */
+        const handleFormSubmit = (e) => {
             e.preventDefault();
             const categoryEl = document.getElementById('category');
+            const deptEl = document.getElementById('department');
             const text = document.getElementById('description').value;
             
             // Simple regex simulation of NLP scrubbing (redacting capitalized names/proper nouns)
@@ -174,9 +426,12 @@
             const newIncident = {
                 id: Date.now(),
                 category: categoryEl.options[categoryEl.selectedIndex].text,
+                dept: deptEl.value,
                 description: scrubbedText,
-                severity: 'medium', // Default severity
-                timestamp: new Date().toISOString()
+                severity: 'medium',
+                status: 'pending',
+                timestamp: new Date().toISOString(),
+                token: sessionToken
             };
 
             // Add to local array and Persist to localStorage
@@ -185,8 +440,12 @@
             
             console.log("Persisted Content:", newIncident);
             
+            // Reset Token for next submission
+            sessionToken = generateToken();
+            document.getElementById('token-display').textContent = `[${sessionToken}]`;
+
             document.getElementById('submission-success').classList.remove('hidden');
-            this.reset();
+            e.target.reset();
             
             setTimeout(() => {
                 document.getElementById('submission-success').classList.add('hidden');
@@ -196,7 +455,39 @@
             if (!document.getElementById('hr-view').classList.contains('hidden')) {
                 renderHRDashboard();
             }
-        });
+        };
+
+        const handleLogin = (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+
+            // Use Linked List to validate credentials
+            if (adminAuthList.validate(user, pass)) {
+                isAuthenticated = true;
+                sessionStorage.setItem('isAdminAuthenticated', 'true');
+                errorMsg.classList.add('hidden');
+                switchView('hr');
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        };
+
+        const handleLogout = () => {
+            isAuthenticated = false;
+            sessionStorage.removeItem('isAdminAuthenticated');
+            switchView('employee');
+        };
+
+        // Initialize Event Listeners
+        document.getElementById('incidentForm').addEventListener('submit', handleFormSubmit);
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+        // Check initial state
+        if (isAuthenticated && window.location.hash === '#hr') {
+            switchView('hr');
+        }
     </script>
     
 </body>
