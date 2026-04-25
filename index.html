@@ -401,6 +401,9 @@
 
         // Switch between Employee and HR views
         function switchView(view) {
+            // Save the view to sessionStorage so this specific tab remembers its role
+            sessionStorage.setItem('activeView', view);
+
             const introSection = document.getElementById('intro-view');
             const empSection = document.getElementById('employee-view');
             const hrSection = document.getElementById('hr-view');
@@ -513,13 +516,15 @@
         document.getElementById('incidentForm').addEventListener('submit', handleFormSubmit);
         document.getElementById('loginForm').addEventListener('submit', handleLogin);
 
-        // Check initial state
-        if (isAuthenticated && window.location.hash === '#hr') {
-            switchView('hr');
-        }
+        // On page load, restore the view state specific to this tab
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedView = sessionStorage.getItem('activeView');
+            if (savedView) {
+                switchView(savedView);
+            }
+        });
+
     </script>
     
 </body>
 </html>
-
-
